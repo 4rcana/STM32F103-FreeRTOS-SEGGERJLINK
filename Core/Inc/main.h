@@ -36,7 +36,9 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef enum {PRESSED, WAIT} ButtonState;
+extern ButtonState Left_Button_State;
+extern char message_buffer[40];
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -62,12 +64,23 @@ void Error_Handler(void);
 #define B1_EXTI_IRQn EXTI15_10_IRQn
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define Left_Button_Pin GPIO_PIN_0
+#define Left_Button_GPIO_Port GPIOB
+#define Left_Button_EXTI_IRQn EXTI0_IRQn
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+#define LED4_Pin GPIO_PIN_6
+#define LED4_GPIO_Port GPIOB
+#define LED3_Pin GPIO_PIN_7
+#define LED3_GPIO_Port GPIOB
+#define LED2_Pin GPIO_PIN_8
+#define LED2_GPIO_Port GPIOB
+#define LED1_Pin GPIO_PIN_9
+#define LED1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

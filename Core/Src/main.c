@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-
+#include "stdio.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -45,32 +45,33 @@
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for myTask01 */
-osThreadId_t myTask01Handle;
-const osThreadAttr_t myTask01_attributes = {
-  .name = "myTask01",
-  .stack_size = 128 * 4,
+/* Definitions for GreenTask */
+osThreadId_t GreenTaskHandle;
+const osThreadAttr_t GreenTask_attributes = {
+  .name = "GreenTask",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for myTask02 */
-osThreadId_t myTask02Handle;
-const osThreadAttr_t myTask02_attributes = {
-  .name = "myTask02",
-  .stack_size = 128 * 4,
+/* Definitions for BlueTask */
+osThreadId_t BlueTaskHandle;
+const osThreadAttr_t BlueTask_attributes = {
+  .name = "BlueTask",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for myTask03 */
-osThreadId_t myTask03Handle;
-const osThreadAttr_t myTask03_attributes = {
-  .name = "myTask03",
-  .stack_size = 128 * 4,
+/* Definitions for RedTask */
+osThreadId_t RedTaskHandle;
+const osThreadAttr_t RedTask_attributes = {
+  .name = "RedTask",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-
+ButtonState Left_Button_State = WAIT;
+char message_buffer[40];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,7 +81,7 @@ void StartDefaultTask(void *argument);
 void GreenLED(void *argument);
 void BlueLED(void *argument);
 void RedLED(void *argument);
-
+void ITM_Print(const char *message_buffer);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -146,14 +147,14 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of myTask01 */
-  myTask01Handle = osThreadNew(GreenLED, NULL, &myTask01_attributes);
+  /* creation of GreenTask */
+  GreenTaskHandle = osThreadNew(GreenLED, NULL, &GreenTask_attributes);
 
-  /* creation of myTask02 */
-  myTask02Handle = osThreadNew(BlueLED, NULL, &myTask02_attributes);
+  /* creation of BlueTask */
+  BlueTaskHandle = osThreadNew(BlueLED, NULL, &BlueTask_attributes);
 
-  /* creation of myTask03 */
-  myTask03Handle = osThreadNew(RedLED, NULL, &myTask03_attributes);
+  /* creation of RedTask */
+  RedTaskHandle = osThreadNew(RedLED, NULL, &RedTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -237,6 +238,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LED2_Pin|LED1_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -250,13 +254,29 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB6 PB7 PB8 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
+  /*Configure GPIO pin : Left_Button_Pin */
+  GPIO_InitStruct.Pin = Left_Button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Left_Button_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LED4_Pin LED3_Pin */
+  GPIO_InitStruct.Pin = LED4_Pin|LED3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : LED2_Pin LED1_Pin */
+  GPIO_InitStruct.Pin = LED2_Pin|LED1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -297,10 +317,44 @@ void StartDefaultTask(void *argument)
 void GreenLED(void *argument)
 {
   /* USER CODE BEGIN GreenLED */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  uint8_t counter = 0;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	counter++;
+
+	sprintf(message_buffer,"GreenTask counter = %d\n",counter);
+	ITM_Print(message_buffer);
+
+	if(Left_Button_State == PRESSED){
+		sprintf(message_buffer,"Terminating GreenTask\n");
+		ITM_Print(message_buffer);
+		osThreadTerminate(GreenTaskHandle);
+	}
+
+	if(counter==5){
+		sprintf(message_buffer,"Terminating RedTask\n");
+		ITM_Print(message_buffer);
+		osThreadTerminate(RedTaskHandle);
+	}
+
+	GPIO_InitStruct.Pin = LED3_Pin|LED1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = LED4_Pin|LED2_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(GPIOB, LED3_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
+
+    osDelay(1000);
   }
   /* USER CODE END GreenLED */
 }
@@ -315,10 +369,33 @@ void GreenLED(void *argument)
 void BlueLED(void *argument)
 {
   /* USER CODE BEGIN BlueLED */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  uint8_t counter=0;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	counter++;
+
+	sprintf(message_buffer,"BlueTask counter = %d\n",counter);
+	ITM_Print(message_buffer);
+
+
+	GPIO_InitStruct.Pin = LED2_Pin|LED1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = LED4_Pin|LED3_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(GPIOB, LED2_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
+
+    osDelay(2001);
   }
   /* USER CODE END BlueLED */
 }
@@ -333,10 +410,32 @@ void BlueLED(void *argument)
 void RedLED(void *argument)
 {
   /* USER CODE BEGIN RedLED */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  uint8_t counter=0;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	counter++;
+
+	sprintf(message_buffer,"RedTask counter = %d\n",counter);
+	ITM_Print(message_buffer);
+
+	GPIO_InitStruct.Pin = LED4_Pin|LED1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = LED3_Pin|LED2_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(GPIOB, LED4_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
+
+    osDelay(3002);
   }
   /* USER CODE END RedLED */
 }
@@ -362,6 +461,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   /* USER CODE END Callback 1 */
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	UNUSED(GPIO_Pin);
+
+	if(GPIO_Pin == Left_Button_Pin){
+		if(Left_Button_State == WAIT){
+			Left_Button_State = PRESSED;
+		}
+		else{
+			Left_Button_State = WAIT;
+		}
+	}
+}
+
+
+void ITM_Print(const char *message_buffer) {
+    while (*message_buffer) {
+        ITM_SendChar(*message_buffer++);  // Send each character
+    }
+}
+
 
 /**
   * @brief  This function is executed in case of error occurrence.
