@@ -37,7 +37,9 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 typedef enum {PRESSED, WAIT} ButtonState;
+typedef enum {ON, OFF} LedState;
 extern ButtonState Left_Button_State;
+extern LedState GreenState, RedState, BlueState;
 extern char message_buffer[40];
 /* USER CODE END ET */
 

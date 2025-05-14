@@ -1,0 +1,4 @@
+../Core/Src/LEDS.c:11:6:LEDGreen	1
+../Core/Src/LEDS.c:30:6:LEDBlue	1
+../Core/Src/LEDS.c:49:6:LEDRed	1
+../Core/Src/LEDS.c:68:6:LEDOff	1

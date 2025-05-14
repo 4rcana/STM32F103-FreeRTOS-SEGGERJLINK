@@ -1,0 +1,4 @@
+../Core/Src/LEDS.c:11:6:LEDGreen	24	static
+../Core/Src/LEDS.c:30:6:LEDBlue	24	static
+../Core/Src/LEDS.c:49:6:LEDRed	24	static
+../Core/Src/LEDS.c:68:6:LEDOff	24	static

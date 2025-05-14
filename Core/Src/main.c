@@ -20,9 +20,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "stdio.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "LEDS.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,25 +53,33 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t GreenTaskHandle;
 const osThreadAttr_t GreenTask_attributes = {
   .name = "GreenTask",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for BlueTask */
 osThreadId_t BlueTaskHandle;
 const osThreadAttr_t BlueTask_attributes = {
   .name = "BlueTask",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for RedTask */
 osThreadId_t RedTaskHandle;
 const osThreadAttr_t RedTask_attributes = {
   .name = "RedTask",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for LedMUX */
+osThreadId_t LedMUXHandle;
+const osThreadAttr_t LedMUX_attributes = {
+  .name = "LedMUX",
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 ButtonState Left_Button_State = WAIT;
+LedState GreenState = OFF, RedState = OFF, BlueState = OFF;
 char message_buffer[40];
 /* USER CODE END PV */
 
@@ -81,7 +90,9 @@ void StartDefaultTask(void *argument);
 void GreenLED(void *argument);
 void BlueLED(void *argument);
 void RedLED(void *argument);
-void ITM_Print(const char *message_buffer);
+void StartLedMUX(void *argument);
+void ITM_Print(const char *argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -155,6 +166,9 @@ int main(void)
 
   /* creation of RedTask */
   RedTaskHandle = osThreadNew(RedLED, NULL, &RedTask_attributes);
+
+  /* creation of LedMUX */
+  LedMUXHandle = osThreadNew(StartLedMUX, NULL, &LedMUX_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -317,11 +331,17 @@ void StartDefaultTask(void *argument)
 void GreenLED(void *argument)
 {
   /* USER CODE BEGIN GreenLED */
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
   uint8_t counter = 0;
   /* Infinite loop */
   for(;;)
   {
+	if(GreenState == OFF) {
+		GreenState = ON;
+	}
+	else {
+		GreenState = OFF;
+	}
+
 	counter++;
 
 	sprintf(message_buffer,"GreenTask counter = %d\n",counter);
@@ -339,21 +359,6 @@ void GreenLED(void *argument)
 		osThreadTerminate(RedTaskHandle);
 	}
 
-	GPIO_InitStruct.Pin = LED3_Pin|LED1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	GPIO_InitStruct.Pin = LED4_Pin|LED2_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	HAL_GPIO_WritePin(GPIOB, LED3_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
-
     osDelay(1000);
   }
   /* USER CODE END GreenLED */
@@ -369,33 +374,23 @@ void GreenLED(void *argument)
 void BlueLED(void *argument)
 {
   /* USER CODE BEGIN BlueLED */
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
   uint8_t counter=0;
   /* Infinite loop */
   for(;;)
   {
+	if(BlueState == OFF) {
+		BlueState = ON;
+	}
+	else {
+		BlueState = OFF;
+	}
+
 	counter++;
 
 	sprintf(message_buffer,"BlueTask counter = %d\n",counter);
 	ITM_Print(message_buffer);
 
-
-	GPIO_InitStruct.Pin = LED2_Pin|LED1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	GPIO_InitStruct.Pin = LED4_Pin|LED3_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	HAL_GPIO_WritePin(GPIOB, LED2_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
-
-    osDelay(2001);
+    osDelay(2000);
   }
   /* USER CODE END BlueLED */
 }
@@ -410,34 +405,63 @@ void BlueLED(void *argument)
 void RedLED(void *argument)
 {
   /* USER CODE BEGIN RedLED */
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
   uint8_t counter=0;
   /* Infinite loop */
   for(;;)
   {
+	if(RedState == OFF) {
+		RedState = ON;
+	}
+	else {
+		RedState = OFF;
+	}
 	counter++;
 
 	sprintf(message_buffer,"RedTask counter = %d\n",counter);
 	ITM_Print(message_buffer);
 
-	GPIO_InitStruct.Pin = LED4_Pin|LED1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	GPIO_InitStruct.Pin = LED3_Pin|LED2_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	HAL_GPIO_WritePin(GPIOB, LED4_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, LED1_Pin, GPIO_PIN_SET);
-
-    osDelay(3002);
+    osDelay(3000);
   }
   /* USER CODE END RedLED */
+}
+
+/* USER CODE BEGIN Header_StartLedMUX */
+/**
+* @brief Function implementing the LedMUX thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartLedMUX */
+void StartLedMUX(void *argument)
+{
+  /* USER CODE BEGIN StartLedMUX */
+  /* Infinite loop */
+  for(;;)
+  {
+	if(GreenState == ON){
+		LEDOff();
+		LEDGreen();
+		osDelay(1);
+	}
+
+	if(BlueState == ON){
+		LEDOff();
+		LEDBlue();
+		osDelay(1);
+	}
+
+	if(RedState == ON){
+		LEDOff();
+		LEDRed();
+		osDelay(1);
+	}
+
+	if(GreenState == OFF && BlueState == OFF && RedState == OFF){
+		LEDOff();
+		osDelay(100);
+	}
+  }
+  /* USER CODE END StartLedMUX */
 }
 
 /**
@@ -475,13 +499,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	}
 }
 
-
-void ITM_Print(const char *message_buffer) {
-    while (*message_buffer) {
-        ITM_SendChar(*message_buffer++);  // Send each character
-    }
+void ITM_Print(const char *message_buffer){
+	while(*message_buffer){
+		ITM_SendChar(*message_buffer++);
+	}
 }
-
 
 /**
   * @brief  This function is executed in case of error occurrence.
