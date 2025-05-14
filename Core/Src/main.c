@@ -350,6 +350,7 @@ void GreenLED(void *argument)
 	if(Left_Button_State == PRESSED){
 		sprintf(message_buffer,"Terminating GreenTask\n");
 		ITM_Print(message_buffer);
+		GreenState = OFF;
 		osThreadTerminate(GreenTaskHandle);
 	}
 
@@ -357,6 +358,7 @@ void GreenLED(void *argument)
 		sprintf(message_buffer,"Terminating RedTask\n");
 		ITM_Print(message_buffer);
 		osThreadTerminate(RedTaskHandle);
+		RedState = OFF;
 	}
 
     osDelay(1000);
