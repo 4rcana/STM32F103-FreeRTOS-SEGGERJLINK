@@ -6,8 +6,8 @@
 ../Core/Src/main.c:332:6:GreenLED	4
 ../Core/Src/main.c:377:6:BlueLED	2
 ../Core/Src/main.c:408:6:RedLED	2
-../Core/Src/main.c:438:6:StartLedMUX	7
-../Core/Src/main.c:478:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:492:6:HAL_GPIO_EXTI_Callback	3
-../Core/Src/main.c:505:6:ITM_Print	2
-../Core/Src/main.c:515:6:Error_Handler	1
+../Core/Src/main.c:438:6:StartLedMUX	13
+../Core/Src/main.c:490:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:504:6:HAL_GPIO_EXTI_Callback	3
+../Core/Src/main.c:517:6:ITM_Print	2
+../Core/Src/main.c:527:6:Error_Handler	1

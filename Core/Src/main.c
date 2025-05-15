@@ -442,26 +442,38 @@ void StartLedMUX(void *argument)
   for(;;)
   {
 	if(GreenState == ON){
-		LEDOff();
 		LEDGreen();
+		if (BlueState == ON || RedState == ON){
 		osDelay(1);
+		}
+		else{
+			osDelay(1000);
+		}
 	}
 
 	if(BlueState == ON){
-		LEDOff();
 		LEDBlue();
+		if (GreenState == ON || RedState == ON){
 		osDelay(1);
+		}
+		else{
+			osDelay(1000);
+		}
 	}
 
 	if(RedState == ON){
-		LEDOff();
 		LEDRed();
+		if (BlueState == ON || GreenState == ON){
 		osDelay(1);
+		}
+		else{
+			osDelay(1000);
+		}
 	}
 
 	if(GreenState == OFF && BlueState == OFF && RedState == OFF){
 		LEDOff();
-		osDelay(100);
+		osDelay(1000);
 	}
   }
   /* USER CODE END StartLedMUX */
