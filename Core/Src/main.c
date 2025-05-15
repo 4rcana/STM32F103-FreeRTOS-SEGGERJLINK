@@ -136,6 +136,7 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
+  SEGGER_SYSVIEW_Conf();
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
