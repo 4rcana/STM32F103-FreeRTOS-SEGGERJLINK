@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define Marker1_Id 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,7 +46,7 @@
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 512 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for GreenTask */
@@ -61,7 +61,7 @@ osThreadId_t BlueTaskHandle;
 const osThreadAttr_t BlueTask_attributes = {
   .name = "BlueTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityBelowNormal2,
 };
 /* Definitions for RedTask */
 osThreadId_t RedTaskHandle;
@@ -317,7 +317,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END 5 */
 }
@@ -336,33 +336,36 @@ void GreenLED(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	if(GreenState == OFF) {
-		GreenState = ON;
-	}
-	else {
-		GreenState = OFF;
-	}
+      SEGGER_SYSVIEW_Print("GreenTask is running");
+      HAL_Delay(50);
 
-	counter++;
+      if(GreenState == OFF) {
+	  GreenState = ON;
+      }
+      else {
+	  GreenState = OFF;
+      }
 
-	sprintf(message_buffer,"GreenTask counter = %d\n",counter);
-	ITM_Print(message_buffer);
+      counter++;
 
-	if(Left_Button_State == PRESSED){
-		sprintf(message_buffer,"Terminating GreenTask\n");
-		ITM_Print(message_buffer);
-		GreenState = OFF;
-		osThreadTerminate(GreenTaskHandle);
-	}
+      sprintf(message_buffer,"GreenTask counter = %d\n",counter);
+      ITM_Print(message_buffer);
 
-	if(counter==5){
-		sprintf(message_buffer,"Terminating RedTask\n");
-		ITM_Print(message_buffer);
-		osThreadTerminate(RedTaskHandle);
-		RedState = OFF;
-	}
+      if(Left_Button_State == PRESSED){
+	  sprintf(message_buffer,"Terminating GreenTask\n");
+	  ITM_Print(message_buffer);
+	  GreenState = OFF;
+	  osThreadTerminate(GreenTaskHandle);
+      }
 
-    osDelay(1000);
+      if(counter==5){
+	  sprintf(message_buffer,"Terminating RedTask\n");
+	  ITM_Print(message_buffer);
+	  osThreadTerminate(RedTaskHandle);
+	  RedState = OFF;
+      }
+
+      osDelay(500);
   }
   /* USER CODE END GreenLED */
 }
@@ -378,22 +381,27 @@ void BlueLED(void *argument)
 {
   /* USER CODE BEGIN BlueLED */
   uint8_t counter=0;
+  SEGGER_SYSVIEW_NameMarker(Marker1_Id, "MyMarker");
   /* Infinite loop */
   for(;;)
   {
-	if(BlueState == OFF) {
-		BlueState = ON;
-	}
-	else {
-		BlueState = OFF;
-	}
+      SEGGER_SYSVIEW_MarkStart(Marker1_Id);
+      SEGGER_SYSVIEW_Print("BlueTask is running");
+      for(uint32_t i=0; i<35000; i++)			//add some delay
+	;
+      if(BlueState == OFF) {
+	  BlueState = ON;
+      }
+      else {
+	  BlueState = OFF;
+      }
 
-	counter++;
+      counter++;
 
-	sprintf(message_buffer,"BlueTask counter = %d\n",counter);
-	ITM_Print(message_buffer);
-
-    osDelay(2000);
+      sprintf(message_buffer,"BlueTask counter = %d\n",counter);
+      ITM_Print(message_buffer);
+      SEGGER_SYSVIEW_MarkStop(Marker1_Id);
+      osDelay(200);
   }
   /* USER CODE END BlueLED */
 }
@@ -447,7 +455,7 @@ void StartLedMUX(void *argument)
 		osDelay(1);
 		}
 		else{
-			osDelay(1000);
+			osDelay(200);
 		}
 	}
 
@@ -457,7 +465,7 @@ void StartLedMUX(void *argument)
 		osDelay(1);
 		}
 		else{
-			osDelay(1000);
+			osDelay(200);
 		}
 	}
 
@@ -467,13 +475,13 @@ void StartLedMUX(void *argument)
 		osDelay(1);
 		}
 		else{
-			osDelay(1000);
+			osDelay(200);
 		}
 	}
 
 	if(GreenState == OFF && BlueState == OFF && RedState == OFF){
 		LEDOff();
-		osDelay(1000);
+		osDelay(200);
 	}
   }
   /* USER CODE END StartLedMUX */

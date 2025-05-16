@@ -4,10 +4,10 @@
 ../Core/Src/main.c:241:13:MX_GPIO_Init	1
 ../Core/Src/main.c:314:6:StartDefaultTask	1
 ../Core/Src/main.c:332:6:GreenLED	4
-../Core/Src/main.c:377:6:BlueLED	2
-../Core/Src/main.c:408:6:RedLED	2
-../Core/Src/main.c:438:6:StartLedMUX	13
-../Core/Src/main.c:490:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:504:6:HAL_GPIO_EXTI_Callback	3
-../Core/Src/main.c:517:6:ITM_Print	2
-../Core/Src/main.c:527:6:Error_Handler	1
+../Core/Src/main.c:380:6:BlueLED	3
+../Core/Src/main.c:416:6:RedLED	2
+../Core/Src/main.c:446:6:StartLedMUX	13
+../Core/Src/main.c:498:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:512:6:HAL_GPIO_EXTI_Callback	3
+../Core/Src/main.c:525:6:ITM_Print	2
+../Core/Src/main.c:535:6:Error_Handler	1
