@@ -34,6 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define Marker1_Id 1
+#pragma GCC diagnostic ignored "-Wcomment"
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,26 +57,31 @@ const osThreadAttr_t GreenTask_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for BlueTask */
+/* Definitions for BlueTask
 osThreadId_t BlueTaskHandle;
 const osThreadAttr_t BlueTask_attributes = {
   .name = "BlueTask",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityBelowNormal2,
 };
-/* Definitions for RedTask */
+/* Definitions for RedTask
 osThreadId_t RedTaskHandle;
 const osThreadAttr_t RedTask_attributes = {
   .name = "RedTask",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for LedMUX */
+/* Definitions for LedMUX
 osThreadId_t LedMUXHandle;
 const osThreadAttr_t LedMUX_attributes = {
   .name = "LedMUX",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for myBlinkyCounter */
+osSemaphoreId_t myBlinkyCounterHandle;
+const osSemaphoreAttr_t myBlinkyCounter_attributes = {
+  .name = "myBlinkyCounter"
 };
 /* USER CODE BEGIN PV */
 ButtonState Left_Button_State = WAIT;
@@ -143,6 +149,11 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* creation of myBlinkyCounter */
+  myBlinkyCounterHandle = osSemaphoreNew(10, 0, &myBlinkyCounter_attributes);
+
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -162,13 +173,13 @@ int main(void)
   /* creation of GreenTask */
   GreenTaskHandle = osThreadNew(GreenLED, NULL, &GreenTask_attributes);
 
-  /* creation of BlueTask */
+  /* creation of BlueTask
   BlueTaskHandle = osThreadNew(BlueLED, NULL, &BlueTask_attributes);
 
-  /* creation of RedTask */
+  /* creation of RedTask
   RedTaskHandle = osThreadNew(RedLED, NULL, &RedTask_attributes);
 
-  /* creation of LedMUX */
+  /* creation of LedMUX
   LedMUXHandle = osThreadNew(StartLedMUX, NULL, &LedMUX_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -317,7 +328,15 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(10);
+    if(Left_Button_State == PRESSED){
+	osDelay(100);	// for button debouncing
+	SEGGER_SYSVIEW_Print("Button Press");
+	osSemaphoreRelease(myBlinkyCounterHandle);
+	Left_Button_State = WAIT;
+    }
+    else{
+	osDelay(100);
+    }
   }
   /* USER CODE END 5 */
 }
@@ -332,13 +351,30 @@ void StartDefaultTask(void *argument)
 void GreenLED(void *argument)
 {
   /* USER CODE BEGIN GreenLED */
-  uint8_t counter = 0;
+  uint8_t counter = 0, semcounter = 0;
   /* Infinite loop */
   for(;;)
   {
       SEGGER_SYSVIEW_Print("GreenTask is running");
-      HAL_Delay(50);
+      semcounter = osSemaphoreGetCount(myBlinkyCounterHandle);
+      sprintf(message_buffer,"Semaphore counter = %d\n",semcounter);
+      SEGGER_SYSVIEW_Print(message_buffer);
 
+      if(osSemaphoreAcquire(myBlinkyCounterHandle, 100) == osOK){
+	  counter++;
+	  LEDGreen();
+	  osDelay(200);
+	  LEDOff();
+	  osDelay(200);
+      }
+      else{
+	  sprintf(message_buffer,"Button press counter = %d\n",counter);
+	  SEGGER_SYSVIEW_Print(message_buffer);
+	  counter = 0;
+	  osDelay(3000);
+      }
+
+/*
       if(GreenState == OFF) {
 	  GreenState = ON;
       }
@@ -364,8 +400,8 @@ void GreenLED(void *argument)
 	  osThreadTerminate(RedTaskHandle);
 	  RedState = OFF;
       }
+*/
 
-      osDelay(500);
   }
   /* USER CODE END GreenLED */
 }
@@ -376,13 +412,13 @@ void GreenLED(void *argument)
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_BlueLED */
+/* USER CODE END Header_BlueLED
 void BlueLED(void *argument)
 {
-  /* USER CODE BEGIN BlueLED */
+  /* USER CODE BEGIN BlueLED
   uint8_t counter=0;
   SEGGER_SYSVIEW_NameMarker(Marker1_Id, "MyMarker");
-  /* Infinite loop */
+  /* Infinite loop
   for(;;)
   {
       SEGGER_SYSVIEW_MarkStart(Marker1_Id);
@@ -403,7 +439,7 @@ void BlueLED(void *argument)
       SEGGER_SYSVIEW_MarkStop(Marker1_Id);
       osDelay(200);
   }
-  /* USER CODE END BlueLED */
+  /* USER CODE END BlueLED
 }
 
 /* USER CODE BEGIN Header_RedLED */
@@ -412,12 +448,12 @@ void BlueLED(void *argument)
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_RedLED */
+/* USER CODE END Header_RedLED
 void RedLED(void *argument)
 {
-  /* USER CODE BEGIN RedLED */
+  /* USER CODE BEGIN RedLED
   uint8_t counter=0;
-  /* Infinite loop */
+  /* Infinite loop
   for(;;)
   {
 	if(RedState == OFF) {
@@ -433,7 +469,7 @@ void RedLED(void *argument)
 
     osDelay(3000);
   }
-  /* USER CODE END RedLED */
+  /* USER CODE END RedLED
 }
 
 /* USER CODE BEGIN Header_StartLedMUX */
@@ -442,11 +478,11 @@ void RedLED(void *argument)
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartLedMUX */
+/* USER CODE END Header_StartLedMUX
 void StartLedMUX(void *argument)
 {
-  /* USER CODE BEGIN StartLedMUX */
-  /* Infinite loop */
+  /* USER CODE BEGIN StartLedMUX
+  /* Infinite loop
   for(;;)
   {
 	if(GreenState == ON){
@@ -484,7 +520,7 @@ void StartLedMUX(void *argument)
 		osDelay(200);
 	}
   }
-  /* USER CODE END StartLedMUX */
+  /* USER CODE END StartLedMUX
 }
 
 /**
@@ -513,12 +549,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	UNUSED(GPIO_Pin);
 
 	if(GPIO_Pin == Left_Button_Pin){
+		Left_Button_State = PRESSED;
+		/*
 		if(Left_Button_State == WAIT){
-			Left_Button_State = PRESSED;
+		    Left_Button_State = PRESSED;
 		}
 		else{
 			Left_Button_State = WAIT;
 		}
+		*/
 	}
 }
 
