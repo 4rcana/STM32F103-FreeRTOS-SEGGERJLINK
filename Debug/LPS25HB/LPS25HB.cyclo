@@ -1,0 +1,3 @@
+../LPS25HB/LPS25HB.c:22:9:LPS25HB_Initialise	3
+../LPS25HB/LPS25HB.c:44:9:LPS25HB_Measure_Temperature_IT	2
+../LPS25HB/LPS25HB.c:57:9:LPS25HB_Measure_Pressure_IT	2

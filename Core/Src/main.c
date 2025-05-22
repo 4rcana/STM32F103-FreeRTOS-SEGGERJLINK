@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "LEDS.h"
+#include "LPS25HB.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,14 +44,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-/* Definitions for defaultTask */
+I2C_HandleTypeDef hi2c2;
+/* Definitions for defaultTask
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for GreenTask */
+/* Definitions for GreenTask
 osThreadId_t GreenTaskHandle;
 const osThreadAttr_t GreenTask_attributes = {
   .name = "GreenTask",
@@ -78,25 +80,51 @@ const osThreadAttr_t LedMUX_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for myBlinkyCounter */
+/* Definitions for myBlinkyCounter
 osSemaphoreId_t myBlinkyCounterHandle;
 const osSemaphoreAttr_t myBlinkyCounter_attributes = {
   .name = "myBlinkyCounter"
 };
-/* USER CODE BEGIN PV */
+/* Definitions for SensorReadTask */
+osThreadId_t SensorReadTaskHandle;
+const osThreadAttr_t SensorReadTask_attributes = {
+  .name = "SensorReadTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for DataTransferTask */
+osThreadId_t DataTransferTaskHandle;
+const osThreadAttr_t DataTransferTask_attributes = {
+  .name = "DataTransferTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for SensorRAWQueue */
+osMessageQueueId_t SensorRAWQueueHandle;
+const osMessageQueueAttr_t SensorRAWQueue_attributes = {
+.name = "SensorRAWQueue"
+};
+/* USER CODE BEGIN PV
 ButtonState Left_Button_State = WAIT;
 LedState GreenState = OFF, RedState = OFF, BlueState = OFF;
+*/
+ButtonState Left_Button_State = TEMP;
 char message_buffer[40];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_I2C2_Init(void);
+/*
 void StartDefaultTask(void *argument);
 void GreenLED(void *argument);
 void BlueLED(void *argument);
 void RedLED(void *argument);
 void StartLedMUX(void *argument);
+*/
+void SensorRead(void *argument);
+void DataTransfer(void *argument);
 void ITM_Print(const char *argument);
 
 /* USER CODE BEGIN PFP */
@@ -137,8 +165,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-
+  LPS25HB_Initialise(&hi2c2);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -150,7 +179,7 @@ int main(void)
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
-  /* creation of myBlinkyCounter */
+  /* creation of myBlinkyCounter
   myBlinkyCounterHandle = osSemaphoreNew(10, 0, &myBlinkyCounter_attributes);
 
 
@@ -162,15 +191,19 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of SensorRAWQueue */
+  SensorRAWQueueHandle = osMessageQueueNew(3, sizeof(uint8_t), &SensorRAWQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
+  /* creation of defaultTask
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of GreenTask */
+  /* creation of GreenTask
   GreenTaskHandle = osThreadNew(GreenLED, NULL, &GreenTask_attributes);
 
   /* creation of BlueTask
@@ -182,6 +215,12 @@ int main(void)
   /* creation of LedMUX
   LedMUXHandle = osThreadNew(StartLedMUX, NULL, &LedMUX_attributes);
 
+   /* creation of SensorReadTask */
+  SensorReadTaskHandle = osThreadNew(SensorRead, NULL, &SensorReadTask_attributes);
+
+  /* creation of DataTransferTask */
+  DataTransferTaskHandle = osThreadNew(DataTransfer, NULL, &DataTransferTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -191,6 +230,7 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
+  SEGGER_SYSVIEW_Conf();
   osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
@@ -242,6 +282,42 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+  HAL_NVIC_SetPriority(I2C2_EV_IRQn, 40, 0); // Set priority
+  HAL_NVIC_EnableIRQ(I2C2_EV_IRQn); // Enable interrupt
+
+  /* USER CODE END I2C2_Init 2 */
+
 }
 
 /**
@@ -300,10 +376,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 13, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 47, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -315,17 +391,65 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
+void SensorRead(void *argument)
+{
+    for(;;)
+    {
+	if(Left_Button_State == TEMP)
+	{
+	    LPS25HB_Measure_Temperature_IT(&hi2c2);
+	}
+	else if(Left_Button_State == PRESS)
+	{
+	    LPS25HB_Measure_Pressure_IT(&hi2c2);
+	}
+	osDelay(1000);
+    }
+}
+
+void DataTransfer(void *argument)
+{
+    uint8_t ReceivedMSG = 0, counter = 0;
+    uint32_t temp = 0;
+    float temperature = 0, pressure = 0;
+    for(;;)
+    {
+	if(osMessageQueueGet(SensorRAWQueueHandle, &ReceivedMSG, NULL, osWaitForever) == osOK){
+	    LEDGreen();
+	    counter++;
+	    temp |= ReceivedMSG << (counter * 8);
+	    if(Left_Button_State == TEMP && counter == 2){
+		LEDRed();
+		temperature = 42.5f + temp / 480.0f;
+		sprintf(message_buffer,"Pressure = %ld\n",(int32_t)temperature);
+		ITM_Print(message_buffer);
+		temp = 0;
+		counter = 0;
+	    }
+	    else if(Left_Button_State == PRESS && counter == 3){
+		pressure =  temp / 40960.0f;
+		sprintf(message_buffer,"Pressure = %ld\n",(int32_t)pressure);
+		ITM_Print(message_buffer);
+		temp = 0;
+		counter = 0;
+	    }
+	}
+    }
+}
+
+
+
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
   * @brief  Function implementing the defaultTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
+/* USER CODE END Header_StartDefaultTask
 void StartDefaultTask(void *argument)
 {
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
+  /* USER CODE BEGIN 5
+  /* Infinite loop
   for(;;)
   {
     if(Left_Button_State == PRESSED){
@@ -338,7 +462,7 @@ void StartDefaultTask(void *argument)
 	osDelay(100);
     }
   }
-  /* USER CODE END 5 */
+  /* USER CODE END 5
 }
 
 /* USER CODE BEGIN Header_GreenLED */
@@ -347,12 +471,12 @@ void StartDefaultTask(void *argument)
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_GreenLED */
+/* USER CODE END Header_GreenLED
 void GreenLED(void *argument)
 {
-  /* USER CODE BEGIN GreenLED */
+  /* USER CODE BEGIN GreenLED
   uint8_t counter = 0, semcounter = 0;
-  /* Infinite loop */
+  /* Infinite loop
   for(;;)
   {
       SEGGER_SYSVIEW_Print("GreenTask is running");
@@ -374,7 +498,7 @@ void GreenLED(void *argument)
 	  osDelay(3000);
       }
 
-/*
+
       if(GreenState == OFF) {
 	  GreenState = ON;
       }
@@ -400,10 +524,9 @@ void GreenLED(void *argument)
 	  osThreadTerminate(RedTaskHandle);
 	  RedState = OFF;
       }
-*/
 
   }
-  /* USER CODE END GreenLED */
+  /* USER CODE END GreenLED
 }
 
 /* USER CODE BEGIN Header_BlueLED */
@@ -549,17 +672,40 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	UNUSED(GPIO_Pin);
 
 	if(GPIO_Pin == Left_Button_Pin){
-		Left_Button_State = PRESSED;
 		/*
+		Left_Button_State = PRESSED;
 		if(Left_Button_State == WAIT){
 		    Left_Button_State = PRESSED;
 		}
 		else{
-			Left_Button_State = WAIT;
+		    Left_Button_State = WAIT;
 		}
 		*/
+		if(Left_Button_State == TEMP){
+		    Left_Button_State = PRESS;
+		}
+		else{
+		    Left_Button_State = TEMP;
+		}
 	}
 }
+
+/**
+ * @brief This function is called when the I2C read operation is complete.
+ * @param hi2c The I2C handle.
+ */
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c->Instance == I2C2) {
+    // The read operation for I2C2 is complete.
+	if (Left_Button_State == TEMP){
+	    osMessageQueuePut(SensorRAWQueueHandle, &Temp_RAW, 0, 0);
+	}
+	else if(Left_Button_State == PRESS){
+	    osMessageQueuePut(SensorRAWQueueHandle, &Press_RAW, 0, 0);
+	}
+  }
+}
+
 
 void ITM_Print(const char *message_buffer){
 	while(*message_buffer){

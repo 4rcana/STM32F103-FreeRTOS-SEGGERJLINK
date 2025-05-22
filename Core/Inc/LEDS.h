@@ -8,12 +8,9 @@
 #ifndef INC_LEDS_H_
 #define INC_LEDS_H_
 
-
-
-#endif /* INC_LEDS_H_ */
-
-
 void LEDGreen();
 void LEDBlue();
 void LEDRed();
 void LEDOff();
+
+#endif /* INC_LEDS_H_ */

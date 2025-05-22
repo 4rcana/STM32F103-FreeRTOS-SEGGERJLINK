@@ -28,7 +28,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -36,10 +35,14 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+/*
 typedef enum {PRESSED, WAIT} ButtonState;
 typedef enum {ON, OFF} LedState;
 extern ButtonState Left_Button_State;
 extern LedState GreenState, RedState, BlueState;
+*/
+typedef enum {TEMP, PRESS} ButtonState;
+extern ButtonState Left_Button_State;
 extern char message_buffer[40];
 /* USER CODE END ET */
 
@@ -69,6 +72,10 @@ void Error_Handler(void);
 #define Left_Button_Pin GPIO_PIN_0
 #define Left_Button_GPIO_Port GPIOB
 #define Left_Button_EXTI_IRQn EXTI0_IRQn
+#define SCL_LPS25HB_Pin GPIO_PIN_10
+#define SCL_LPS25HB_GPIO_Port GPIOB
+#define SDA_LPS25HB_Pin GPIO_PIN_11
+#define SDA_LPS25HB_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
