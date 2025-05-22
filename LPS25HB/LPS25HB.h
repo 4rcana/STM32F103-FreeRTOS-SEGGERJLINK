@@ -24,7 +24,6 @@
 #define LPS25HB_PRESS_OUT_XL		0x28			// Pressure output value (LSB)
 
 /* Private function prototypes -----------------------------------------------*/
-extern uint8_t Temp_RAW[2], Press_RAW[3];
 
 uint8_t 	LPS25HB_Initialise(I2C_HandleTypeDef *i2cHandle);
 uint8_t   	LPS25HB_Measure_Temperature_IT(I2C_HandleTypeDef *i2cHandle);

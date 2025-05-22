@@ -45,6 +45,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c2;
+
+UART_HandleTypeDef huart2;
+
 /* Definitions for defaultTask
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -410,26 +413,25 @@ void SensorRead(void *argument)
 void DataTransfer(void *argument)
 {
     uint8_t ReceivedMSG = 0, counter = 0;
-    uint32_t temp = 0;
+    int32_t temp = 0;
     float temperature = 0, pressure = 0;
     for(;;)
     {
 	if(osMessageQueueGet(SensorRAWQueueHandle, &ReceivedMSG, NULL, osWaitForever) == osOK){
-	    LEDGreen();
-	    counter++;
 	    temp |= ReceivedMSG << (counter * 8);
+	    counter++;
 	    if(Left_Button_State == TEMP && counter == 2){
-		LEDRed();
-		temperature = 42.5f + temp / 480.0f;
-		sprintf(message_buffer,"Pressure = %ld\n",(int32_t)temperature);
-		ITM_Print(message_buffer);
+		if(temp > 32767) { temperature = 42.5f + (temp - 65535) / 480.0f; }	// Because value should be interpreted in 2's complement and int32_t is being used
+		else { temperature = 42.5f + temp / 480.0f; }				// Calculated temperature is in degrees celsius.
+		sprintf(message_buffer,"Temperature: %.2f\r\n",temperature);
+		HAL_UART_Transmit(&huart2,(uint8_t *)message_buffer,40,HAL_MAX_DELAY);
 		temp = 0;
 		counter = 0;
 	    }
 	    else if(Left_Button_State == PRESS && counter == 3){
-		pressure =  temp / 40960.0f;
-		sprintf(message_buffer,"Pressure = %ld\n",(int32_t)pressure);
-		ITM_Print(message_buffer);
+		pressure =  temp / 4096.0f;						// Calculated pressure is in hPa
+		sprintf(message_buffer,"Pressure: %.2f\r\n",pressure);
+		HAL_UART_Transmit(&huart2,(uint8_t *)message_buffer,40,HAL_MAX_DELAY);
 		temp = 0;
 		counter = 0;
 	    }
@@ -689,23 +691,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 		}
 	}
 }
-
-/**
- * @brief This function is called when the I2C read operation is complete.
- * @param hi2c The I2C handle.
- */
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c->Instance == I2C2) {
-    // The read operation for I2C2 is complete.
-	if (Left_Button_State == TEMP){
-	    osMessageQueuePut(SensorRAWQueueHandle, &Temp_RAW, 0, 0);
-	}
-	else if(Left_Button_State == PRESS){
-	    osMessageQueuePut(SensorRAWQueueHandle, &Press_RAW, 0, 0);
-	}
-  }
-}
-
 
 void ITM_Print(const char *message_buffer){
 	while(*message_buffer){

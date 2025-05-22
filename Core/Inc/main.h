@@ -28,6 +28,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
+#include "cmsis_os.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -44,6 +45,7 @@ extern LedState GreenState, RedState, BlueState;
 typedef enum {TEMP, PRESS} ButtonState;
 extern ButtonState Left_Button_State;
 extern char message_buffer[40];
+extern osMessageQueueId_t SensorRAWQueueHandle;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -67,6 +69,10 @@ void Error_Handler(void);
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
 #define B1_EXTI_IRQn EXTI15_10_IRQn
+#define USART_TX_Pin GPIO_PIN_2
+#define USART_TX_GPIO_Port GPIOA
+#define USART_RX_Pin GPIO_PIN_3
+#define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
 #define Left_Button_Pin GPIO_PIN_0

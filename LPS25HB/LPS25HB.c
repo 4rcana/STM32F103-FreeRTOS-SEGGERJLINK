@@ -8,6 +8,7 @@
 
 #include "main.h"
 #include "LPS25HB.h"
+#include "cmsis_os.h"
 
 uint8_t chipID;
 uint8_t datatowrite = 0;
@@ -65,4 +66,27 @@ uint8_t	LPS25HB_Measure_Pressure_IT(I2C_HandleTypeDef *i2cHandle) {
   HAL_I2C_Mem_Read_IT(i2cHandle, LPS25HB_ADDRESS, LPS25HB_PRESS_OUT_XL | 0x80, I2C_MEMADD_SIZE_8BIT, Press_RAW, 3);
 
 	return 0;
+}
+
+/**
+ * @brief This function is called when the I2C read operation is complete.
+ * @param hi2c The I2C handle.
+ */
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c->Instance == I2C2) {
+      uint8_t msg;
+    // The read operation for I2C2 is complete.
+	if (Left_Button_State == TEMP){
+	    for(int i=0; i<2; i++){
+		msg = Temp_RAW[i];
+		osMessageQueuePut(SensorRAWQueueHandle, &msg, 0, 0);
+	    }
+	}
+	else if(Left_Button_State == PRESS){
+	    for(int i=0; i<3; i++){
+		msg = Press_RAW[i];
+		osMessageQueuePut(SensorRAWQueueHandle, &msg, 0, 0);
+	    }
+	}
+  }
 }
