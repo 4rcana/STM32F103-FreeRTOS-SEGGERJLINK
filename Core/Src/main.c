@@ -119,6 +119,8 @@ char message_buffer[40];
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_USART2_UART_Init(void);
+
 /*
 void StartDefaultTask(void *argument);
 void GreenLED(void *argument);
@@ -169,6 +171,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   LPS25HB_Initialise(&hi2c2);
   /* USER CODE END 2 */
@@ -285,6 +288,39 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
 }
 
 /**
@@ -423,14 +459,14 @@ void DataTransfer(void *argument)
 	    if(Left_Button_State == TEMP && counter == 2){
 		if(temp > 32767) { temperature = 42.5f + (temp - 65535) / 480.0f; }	// Because value should be interpreted in 2's complement and int32_t is being used
 		else { temperature = 42.5f + temp / 480.0f; }				// Calculated temperature is in degrees celsius.
-		sprintf(message_buffer,"Temperature: %.2f\r\n",temperature);
+		sprintf(message_buffer,"Temperature: %.2f C\r\n",temperature);
 		HAL_UART_Transmit(&huart2,(uint8_t *)message_buffer,40,HAL_MAX_DELAY);
 		temp = 0;
 		counter = 0;
 	    }
 	    else if(Left_Button_State == PRESS && counter == 3){
 		pressure =  temp / 4096.0f;						// Calculated pressure is in hPa
-		sprintf(message_buffer,"Pressure: %.2f\r\n",pressure);
+		sprintf(message_buffer,"Pressure: %.2f hPa\r\n",pressure);
 		HAL_UART_Transmit(&huart2,(uint8_t *)message_buffer,40,HAL_MAX_DELAY);
 		temp = 0;
 		counter = 0;
